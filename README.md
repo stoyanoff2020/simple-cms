@@ -4,11 +4,13 @@ A simple content management system built with Node.js, Express, and PostgreSQL.
 
 ## Features
 
-- User authentication and authorization
-- Article management with drafts and publishing
-- Category and tag organization
-- Full-text search functionality
+- User authentication and authorization with JWT
+- Article management with drafts and publishing workflow
+- Category and tag organization for content classification
+- Full-text search functionality with PostgreSQL
 - RESTful API with comprehensive documentation
+- Role-based access control (admin, author, reader)
+- Comprehensive test suite with integration tests
 
 ## Getting Started
 
