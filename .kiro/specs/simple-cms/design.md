@@ -10,26 +10,47 @@ The Simple CMS will be built as a web application with a clean separation betwee
 
 ```mermaid
 graph TB
-    A[Web Browser] --> B[Frontend Application]
+    A[Web Browser] --> B[React Frontend]
     B --> C[API Gateway/Router]
     C --> D[Authentication Service]
     C --> E[Article Service]
     C --> F[User Service]
     C --> G[Search Service]
-    E --> H[Database]
-    F --> H
-    G --> I[Search Index]
-    H --> J[(PostgreSQL)]
-    I --> K[(Elasticsearch/Simple Search)]
+    C --> H[Media Service]
+    E --> I[Database]
+    F --> I
+    G --> J[Search Index]
+    H --> K[File Storage]
+    I --> L[(PostgreSQL)]
+    J --> L
+    K --> M[Local/Cloud Storage]
+    
+    subgraph "Frontend Components"
+        N[Login/Auth UI]
+        O[Article Editor]
+        P[Media Manager]
+        Q[Dashboard]
+        R[Search Interface]
+    end
+    
+    B --> N
+    B --> O
+    B --> P
+    B --> Q
+    B --> R
 ```
 
 ### Technology Stack
-- **Frontend**: React with TypeScript for type safety and modern development
+- **Frontend**: React with TypeScript, Material-UI/Bootstrap for UI components
+- **State Management**: Redux Toolkit or React Context API
+- **Rich Text Editor**: Draft.js, Quill, or TinyMCE for article editing
+- **HTTP Client**: Axios for API communication
 - **Backend**: Node.js with Express.js for API development
 - **Database**: PostgreSQL for relational data storage
 - **Search**: Full-text search using PostgreSQL's built-in capabilities (with option to upgrade to Elasticsearch)
 - **Authentication**: JWT-based authentication with bcrypt for password hashing
-- **File Storage**: Local filesystem (with option to upgrade to cloud storage)
+- **File Storage**: Local filesystem with multer (with option to upgrade to AWS S3)
+- **Image Processing**: Sharp for image optimization and resizing
 
 ## Components and Interfaces
 
@@ -167,6 +188,99 @@ interface SearchResult {
 }
 ```
 
+### 6. Media Management Component
+
+**Responsibilities:**
+- Image upload and storage
+- File validation and security
+- Image optimization and resizing
+- Media library management
+
+**Key Interfaces:**
+```typescript
+interface MediaFile {
+  id: string;
+  filename: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  url: string;
+  thumbnailUrl?: string;
+  uploadedBy: string;
+  createdAt: Date;
+}
+
+interface MediaService {
+  uploadImage(file: Express.Multer.File, userId: string): Promise<MediaFile>;
+  getMediaLibrary(userId?: string, pagination?: PaginationOptions): Promise<PaginatedResult<MediaFile>>;
+  deleteMedia(id: string, userId: string): Promise<void>;
+  optimizeImage(filePath: string): Promise<string>;
+  generateThumbnail(filePath: string): Promise<string>;
+}
+```
+
+### 7. Frontend Components
+
+**Responsibilities:**
+- User interface for all CMS operations
+- State management and API integration
+- Responsive design and user experience
+
+**Key Components:**
+```typescript
+// Authentication Components
+interface LoginForm {
+  email: string;
+  password: string;
+  onSubmit: (credentials: LoginCredentials) => Promise<void>;
+}
+
+interface RegisterForm {
+  username: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  onSubmit: (userData: RegisterData) => Promise<void>;
+}
+
+// Article Management Components
+interface ArticleEditor {
+  article?: Article;
+  onSave: (article: ArticleData) => Promise<void>;
+  onPublish: (articleId: string) => Promise<void>;
+  onImageUpload: (file: File) => Promise<string>;
+}
+
+interface ArticleList {
+  articles: Article[];
+  pagination: PaginationInfo;
+  filters: ArticleFilters;
+  onFilterChange: (filters: ArticleFilters) => void;
+  onPageChange: (page: number) => void;
+}
+
+// Media Management Components
+interface MediaLibrary {
+  files: MediaFile[];
+  onUpload: (files: FileList) => Promise<void>;
+  onSelect: (file: MediaFile) => void;
+  onDelete: (fileId: string) => Promise<void>;
+}
+
+// Search Components
+interface SearchForm {
+  query: string;
+  filters: SearchFilters;
+  onSearch: (query: string, filters: SearchFilters) => void;
+}
+
+interface SearchResults {
+  results: SearchResult[];
+  pagination: PaginationInfo;
+  onPageChange: (page: number) => void;
+}
+```
+
 ## Data Models
 
 ### Database Schema
@@ -227,6 +341,19 @@ CREATE TABLE article_tags (
   article_id UUID REFERENCES articles(id) ON DELETE CASCADE,
   tag_id UUID REFERENCES tags(id) ON DELETE CASCADE,
   PRIMARY KEY (article_id, tag_id)
+);
+
+-- Media files table
+CREATE TABLE media_files (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  filename VARCHAR(255) NOT NULL,
+  original_name VARCHAR(255) NOT NULL,
+  mime_type VARCHAR(100) NOT NULL,
+  size INTEGER NOT NULL,
+  url VARCHAR(500) NOT NULL,
+  thumbnail_url VARCHAR(500),
+  uploaded_by UUID REFERENCES users(id),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
